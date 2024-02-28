@@ -309,7 +309,6 @@ class MainScreen(MDScreen):
         self.edit_table_entry_popup.dismiss()
 
     def delete_entry(self, *args):
-        deleted = False
         if not self.edit_table_entry_popup.children[0].children[0].children[0].children[5].text:
             return False
         self.children[1].children[0].children[3].remove_row(
