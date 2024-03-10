@@ -3,8 +3,10 @@ import docx
 import json
 import copy
 import spacy
+import numpy
 from nltk.corpus import stopwords
 from nltk.parse.malt import MaltParser
+import nltk.corpus as corp
 
 
 UNSHIPHER = {
@@ -42,19 +44,19 @@ UNSHIPHER = {
     "VBD": "глагол, прошедшее время",
     "VBG": "глагол, герундий/презенс-партицип  берущий",
     "VBN": "глагол, прошедшее причастие  взятый",
-    "VBP": "глагол, настоящее время, ед. число, не 3-е лицо  беру",
-    "VBZ": "глагол, настоящее время, 3-е лицо, ед. число  берет",
-    "WDT": "вопросительный определитель. Обстоятельство",
-    "WP": "вопросительное местоимение. Обстоятельство",
-    "WP$": "притяжательное вопросительное местоимение чей, ",
+    "VBP": "глагол, настоящее время, ед. число, не 3-е лицо",
+    "VBZ": "глагол, настоящее время, 3-е лицо, ед. число",
+    "WDT": "вопросительный определитель",
+    "WP": "вопросительное местоимение",
+    "WP$": "притяжательное вопросительное местоимение",
     "WRB": "вопросительное наречие",
-    "TO": 'to  идти "в" магазин.',
+    "TO": 'to',
     "UH": "междометие",
     "VB": "глагол, исходная форма",
 }
 
 
-signs = "!~@#$%^&*()_+<>?:.,;[]\\|'\"\'–«"
+signs = "!~@#$%^&*()_+<>?:.,;[]\\|'\"\'–«‘1234567890"
 
 
 def load_file(path: str) -> list:
@@ -76,73 +78,33 @@ def load_file(path: str) -> list:
 
 
 def process_text(raw_data):
-    nlp = spacy.load("en_core_web_sm")
     stop_words = set(stopwords.words("english"))
+    corpus_file = open('corpus.json', 'r')
+    corpus = json.load(corpus_file)
+    corpus_file.close()
     for sign in signs:
         stop_words.add(sign)
+    raw_data = raw_data.replace('.', ' ')
     word_tokens = nltk.tokenize.word_tokenize(raw_data)
     tagged_word_tokens = nltk.pos_tag(word_tokens)
-    sentences = nltk.sent_tokenize(raw_data)
-    sentences = [nltk.tokenize.word_tokenize(
-        sentence) for sentence in sentences]
-    # sentences = [[word for word in sentence if word.lower() not in stop_words]
-    #             for sentence in sentences]
-    for sentence in range(len(sentences)):
-        temp_sent = ''
-        for word in sentences[sentence]:
-            temp_sent += word + ' '
-        sentences[sentence] = temp_sent
-    tagged_sentences = [nlp(sentence)
-                        for sentence in sentences]
-
     final_table = []
     for token in tagged_word_tokens:
-        if token[0].lower() not in stop_words:
+        if (token[0].lower() not in stop_words) and not token[0].isdigit():
             final_table.append(token)
     for token in range(len(final_table)):
         buffer = final_table[token][0]
         final_table[token] = (buffer, UNSHIPHER.get(final_table[token][1]))
-    synt_collection = dict()
-    for sentence in tagged_sentences:
-        struct_of_sentence = []
-        podl_index = 0
-        scaz_index = 0
-        for token in sentence:
-            struct_of_sentence.append({token.pos_})
-        switch = False
-        for index in range(len(struct_of_sentence)):
-            if (struct_of_sentence[index] == {'NOUN'} or struct_of_sentence[index] == {'PROPN'} or struct_of_sentence[index] == {'PRON'}):
-                for sub_index in range(index+1, len(struct_of_sentence)):
-                    if (struct_of_sentence[sub_index] == {'NOUN'} or struct_of_sentence[sub_index] == {'PROPN'}):
-                        break
-                    if (struct_of_sentence[sub_index] == {'VERB'}):
-                        podl_index = index
-                        scaz_index = sub_index
-                        struct_of_sentence[podl_index] = " ,Подлежащее"
-                        for change_index in range(index+1, scaz_index+1):
-                            struct_of_sentence[change_index] = " ,Сказуемое"
-                        switch = True
-                        break
-            if switch:
-                break
-        for index in range(0, index):
-            struct_of_sentence[index] = ' ,Обстоятельство времени или места'
-        changer = ' ,Дополнение'
-        for index in range(scaz_index+1, len(sentence)):
-            if (struct_of_sentence[index] != {'NOUN'}) or (struct_of_sentence[index] != {'PROPN'}):
-                changer = ' ,Обстоятельство'
-            struct_of_sentence[index] = changer
-        for entry in range(len(struct_of_sentence)):
-            if sentence[entry].text.lower() not in stop_words:
-                synt_collection[str(sentence[entry])
-                                ] = struct_of_sentence[entry]
-    print(len(synt_collection), len(final_table))
-    for index in range(len(final_table)):
-        if synt_collection.get(final_table[index][0]):
-            final_table[index] = (final_table[index][0], str(final_table[index]
-                                  [1] + synt_collection.get(final_table[index][0])))
     final_table = set(final_table)
     final_table = list(final_table)
+    elemenation_list = []
+    for entry in range(len(final_table)):
+        if (final_table[entry][0] not in corpus.keys()) or not final_table[entry][1]:
+            elemenation_list.append(final_table[entry])
+        else:
+            final_table[entry] = (final_table[entry][0], final_table[entry][1] +
+                                  ' ,количество вхождений: ' + str(corpus.get(final_table[entry][0])))
+    for entry in elemenation_list:
+        final_table.remove(entry)
     return final_table
 
 
