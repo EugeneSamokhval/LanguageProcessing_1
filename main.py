@@ -95,7 +95,7 @@ class MainScreen(MDScreen):
 
         MainLabel = Label()
         MainLabel.font_size = 96
-        MainLabel.text = "Система формирования словаря"
+        MainLabel.text = "Корпусный менеджер"
         MainLabel.font_family = "JejuGothic"
         MainLabel.color = (1, 1, 1, 1)
         MainLabel.padding = 10

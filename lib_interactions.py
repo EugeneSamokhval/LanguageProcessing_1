@@ -82,10 +82,6 @@ def process_text(raw_data):
     corpus_file = open('corpus.json', 'r')
     corpus = json.load(corpus_file)
     corpus_file.close()
-    for sign in signs:
-        stop_words.add(sign)
-    raw_data = raw_data.replace('.', ' ')
-    word_tokens = nltk.tokenize.word_tokenize(raw_data)
     tagged_word_tokens = nltk.pos_tag(word_tokens)
     final_table = []
     for token in tagged_word_tokens:
